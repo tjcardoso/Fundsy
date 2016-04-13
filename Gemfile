@@ -37,6 +37,7 @@ group :development, :test do
   gem 'byebug'
 
   gem "rspec-rails"
+  gem "nyan-cat-formatter"
 end
 
 group :development do

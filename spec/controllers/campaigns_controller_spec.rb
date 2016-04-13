@@ -46,9 +46,41 @@ RSpec.describe CampaignsController, type: :controller do
     end
 
     describe "with invalid attributes" do
-      it "renders the new template"
-      it "sets an alert message"
-      it "doesn't save a record to the database"
+      def invalid_request
+        post :create, campaign: {goal: 12}
+      end
+
+      it "renders the new template" do
+        invalid_request
+        expect(response).to render_template(:new)
+      end
+
+      it "sets an alert message" do
+        invalid_request
+        expect(flash[:alert]).to be
+      end
+
+      it "doesn't save a record to the database" do
+        count_before = Campaign.count
+        invalid_request
+        count_after = Campaign.count
+        expect(count_after).to eq(count_before)
+      end
+    end
+  end
+
+  describe "#show" do
+    before do
+      @c = Campaign.create(title: "valid title", goal: 123)
+      get :show, id: @c.id
+    end
+
+    it "renders the show template" do
+      expect(response).to render_template(:show)
+    end
+
+    it "sets a campaign instance variable" do
+      expect(assigns(:campaign)).to eq(@c)
     end
   end
 
