@@ -2,6 +2,18 @@ require 'rails_helper'
 
 RSpec.describe CampaignsController, type: :controller do
 
+  let(:campaign) { FactoryGirl.create(:campaign) }
+  # is equivalent to:
+  # # this technique is called memoization
+  # def campaign
+  #   # if @campaign is nil it will call FactoryGirl.create(:campaign)
+  #   # otherwise it will just return @campaign
+  #   @campaign ||= FactoryGirl.create(:campaign)
+  # end
+
+  # If you want to force creating a campaign then you can use:
+  # let!(:campaign) { FactoryGirl.create(:campaign) }
+
   describe "#new" do
     before { get :new }
 
@@ -24,7 +36,7 @@ RSpec.describe CampaignsController, type: :controller do
       # methods defined with in `describe` are only available to examples
       # defined within the same describe (also applies to `context`)
       def valid_request
-        post :create, campaign: {title: "abc", goal: 100, body: "123"}
+        post :create, campaign: FactoryGirl.attributes_for(:campaign)
       end
 
       it "saves a record to the database" do
@@ -71,8 +83,8 @@ RSpec.describe CampaignsController, type: :controller do
 
   describe "#show" do
     before do
-      @c = Campaign.create(title: "valid title", goal: 123)
-      get :show, id: @c.id
+      # @c = FactoryGirl.create(:campaign)
+      get :show, id: campaign.id
     end
 
     it "renders the show template" do
@@ -80,8 +92,92 @@ RSpec.describe CampaignsController, type: :controller do
     end
 
     it "sets a campaign instance variable" do
-      expect(assigns(:campaign)).to eq(@c)
+      expect(assigns(:campaign)).to eq(campaign)
     end
   end
 
+  describe "#index" do
+    it "renders the index template" do
+      get :index
+      expect(response).to render_template(:index)
+    end
+
+    it "assigns an instance variable to all campaigns in the DB" do
+      # GIVEN:
+      c  = FactoryGirl.create(:campaign)
+      c1 = FactoryGirl.create(:campaign)
+
+      # WHEN:
+      get :index
+
+      # THEN:
+      expect(assigns(:campaigns)).to eq([c, c1])
+    end
+  end
+
+  describe "#edit" do
+    it "renders the edit template" do
+      get :edit, id: campaign.id
+      expect(response).to render_template(:edit)
+    end
+    it "sets an instance variable with the passed id" do
+      get :edit, id: campaign.id
+      expect(assigns(:campaign)).to eq(campaign)
+    end
+  end
+
+  describe "#update" do
+    describe "with valid params" do
+      let(:new_valid_body) { Faker::ChuckNorris.fact }
+
+      before do
+        patch :update, id: campaign.id, campaign: {body: new_valid_body}
+      end
+
+      it "updates the record whose id is passed" do
+        expect(campaign.reload.body).to eq(new_valid_body)
+      end
+
+      it "redirects to the show page" do
+        expect(response).to redirect_to(campaign_path(campaign))
+      end
+
+      it "sets a flash notice message" do
+        expect(flash[:notice]).to be
+      end
+    end
+    describe "with invalid params" do
+      before do
+        patch :update, id: campaign.id, campaign: {title: ""}
+      end
+      it "doesnt update the record whose is passed" do
+        expect(campaign.title).to eq(campaign.reload.title)
+      end
+
+      it "renders the edit template" do
+        expect(response).to render_template(:edit)
+      end
+    end
+  end
+
+  describe "#destroy" do
+    it "removes the campaign from the database" do
+      campaign
+      count_before = Campaign.count
+      delete :destroy, id: campaign.id
+      count_after  = Campaign.count
+      expect(count_after).to eq(count_before - 1)
+      # expect { delete :destroy, id: campaign.id }.to  change { Campaign.count }.by(-1)
+    end
+
+    it "redirects to the index page" do
+      delete :destroy, id: campaign.id
+      expect(response).to redirect_to(campaigns_path)
+    end
+
+    it "sets a flash message" do
+      delete :destroy, id: campaign.id
+      expect(flash[:notice]).to be
+    end
+  end
 end
