@@ -40,7 +40,7 @@ RSpec.describe UsersController, type: :controller do
       it "sets the session user_id with the created user id" do
         valid_request
         expect(session[:user_id]).to eq(User.last.id)
-      end
+        end
     end
     context "with invalid user attributes" do
       def invalid_request
@@ -55,7 +55,7 @@ RSpec.describe UsersController, type: :controller do
 
       it "renders the new template" do
         invalid_request
-        expect(response).to render_template(:new)        
+        expect(response).to render_template(:new)
       end
     end
   end
